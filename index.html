@@ -137,10 +137,10 @@
                     <p class="text-white text-sm md:text-base mt-1">Design exclusivo 2026</p>
                 </div>
                 
-                <!-- Carrossel de Imagens -->
+                <!-- Carrossel de Imagens - CORRIGIDO -->
                 <div class="swiper-container bg-gradient-to-br from-gray-50 to-gray-100" id="swiper1">
                     <div class="swiper-slide">
-                        <img data-src="camisera.jpeg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="Camiseta Frente" class="w-full h-80 md:h-96 object-contain lazy" loading="lazy">
+                        <img src="camisera.jpeg" alt="Camiseta Frente" class="w-full h-80 md:h-96 object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/667eea/ffffff?text=Camiseta+Comitiva';">
                     </div>
                 </div>
                 <div class="dots bg-gradient-to-br from-gray-50 to-gray-100 pb-4" id="dots1">
@@ -169,13 +169,13 @@
                     <p class="text-white text-sm md:text-base mt-1">Melhor custo-benefício!</p>
                 </div>
                 
-                <!-- Carrossel de Imagens -->
+                <!-- Carrossel de Imagens - CORRIGIDO -->
                 <div class="swiper-container bg-gradient-to-br from-gray-50 to-gray-100" id="swiper2">
                     <div class="swiper-slide">
-                        <img data-src="camisera.jpeg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="Combo Frente" class="w-full h-80 md:h-96 object-contain lazy" loading="lazy">
+                        <img src="camisera.jpeg" alt="Combo Frente" class="w-full h-80 md:h-96 object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/f97316/ffffff?text=Camiseta';">
                     </div>
                     <div class="swiper-slide">
-                        <img data-src="pulseira.jpeg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="Combo Costas" class="w-full h-80 md:h-96 object-contain lazy" loading="lazy">
+                        <img src="pulseira.jpeg" alt="Pulseira Open Bar" class="w-full h-80 md:h-96 object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/ec4899/ffffff?text=Pulseira+Open+Bar';">
                     </div>
                 </div>
                 <div class="dots bg-gradient-to-br from-gray-50 to-gray-100 pb-4" id="dots2">
@@ -331,7 +331,7 @@
                 </div>
 
                 <div class="space-y-4">
-                    <button onclick="processarPagamento('PIX')" id="btnProcessarPagamento" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-xl font-bold text-lg">
+                    <button onclick="processarPagamento()" id="btnProcessarPagamento" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-xl font-bold text-lg">
                         <span class="text-3xl">✅</span>
                         <span>JÁ PAGUEI - ENVIAR COMPROVANTE</span>
                     </button>
@@ -347,7 +347,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Footer -->
     <div class="text-center py-8 mt-8">
@@ -427,7 +426,7 @@
         let selectedProduct = null;
         let selectedSize = null;
         let formData = { nome: '', telefone: '', localizacao: '' };
-        let feedbackEstrelas = null;
+        let pedidoPendente = null;
 
         // ============================================
         // FUNÇÕES DE NOTIFICAÇÃO
@@ -503,16 +502,6 @@
                 status: 'pendente'
             });
             localStorage.setItem('pedidosComitiva', JSON.stringify(pedidos));
-        }
-
-        function trackEvent(acao, produto, valor) {
-            const analytics = JSON.parse(localStorage.getItem('analyticsComitiva') || '{}');
-            
-            analytics[acao] = (analytics[acao] || 0) + 1;
-            analytics.totalPedidos = (analytics.totalPedidos || 0) + 1;
-            analytics.receitaTotal = (analytics.receitaTotal || 0) + parseFloat(valor.replace('R$ ', '').replace(',', '.'));
-            
-            localStorage.setItem('analyticsComitiva', JSON.stringify(analytics));
         }
 
         // ============================================
@@ -601,6 +590,17 @@
                 return;
             }
 
+            // Salvar pedido pendente (sem enviar email ainda)
+            pedidoPendente = {
+                produto: selectedProduct.name,
+                tamanho: selectedSize,
+                cliente: formData.nome,
+                telefone: formData.telefone,
+                localizacao: formData.localizacao,
+                valor: selectedProduct.price,
+                formaPagamento: 'PIX'
+            };
+
             document.getElementById('formView').style.display = 'none';
             document.getElementById('paymentView').style.display = 'block';
             
@@ -639,41 +639,35 @@
             });
         }
 
-        function processarPagamento(metodo) {
-            const dadosPedido = {
-                produto: selectedProduct.name,
-                tamanho: selectedSize,
-                cliente: formData.nome,
-                telefone: formData.telefone,
-                localizacao: formData.localizacao,
-                valor: selectedProduct.price,
-                formaPagamento: metodo
-            };
+        function processarPagamento() {
+            if (!pedidoPendente) {
+                mostrarNotificacao('Nenhum pedido pendente encontrado!', 'erro');
+                return;
+            }
             
             const btnPagamento = document.getElementById('btnProcessarPagamento');
             const textoOriginal = btnPagamento.innerHTML;
             btnPagamento.disabled = true;
-            btnPagamento.innerHTML = '<span class="text-2xl">⏳</span> Enviando...';
+            btnPagamento.innerHTML = '<span class="text-2xl">⏳</span> Enviando email...';
             
-            // Salvar no localStorage
-            salvarPedidoLocalStorage(dadosPedido);
-            trackEvent('compraFinalizada', selectedProduct.name, selectedProduct.price);
-            
-            // Enviar email
-            enviarEmail(dadosPedido)
+            // AGORA SIM envia o email (após usuário confirmar que fez o PIX)
+            enviarEmail(pedidoPendente)
                 .then(() => {
+                    // Salvar no localStorage como confirmado
+                    salvarPedidoLocalStorage(pedidoPendente);
+                    
                     // Abrir WhatsApp com mensagem
                     const mensagem = `🎉 *PEDIDO COMITIVA GIRA MUNDO 2026*
 
 📋 *Dados do Pedido:*
-• Produto: ${selectedProduct.name}
-• Tamanho: ${selectedSize}
-• Valor: ${selectedProduct.price}
+• Produto: ${pedidoPendente.produto}
+• Tamanho: ${pedidoPendente.tamanho}
+• Valor: ${pedidoPendente.valor}
 
 👤 *Dados do Cliente:*
-• Nome: ${formData.nome}
-• Telefone: ${formData.telefone}
-• Endereço: ${formData.localizacao}
+• Nome: ${pedidoPendente.cliente}
+• Telefone: ${pedidoPendente.telefone}
+• Endereço: ${pedidoPendente.localizacao}
 
 ✅ *Pagamento realizado via PIX*
 
@@ -682,13 +676,11 @@ Segue comprovante em anexo 👇`;
                     const whatsappUrl = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(mensagem)}`;
                     window.open(whatsappUrl, '_blank');
                     
-                    mostrarNotificacao('Pedido registrado com sucesso! Envie o comprovante no WhatsApp.', 'sucesso');
+                    mostrarNotificacao('✅ Email enviado! Agora envie o comprovante no WhatsApp.', 'sucesso');
                     
-                    // Mostrar feedback após 3 segundos
+                    // Resetar formulário após 3 segundos
                     setTimeout(() => {
-                        document.getElementById('paymentView').style.display = 'none';
-                        document.getElementById('feedbackSection').classList.remove('hidden');
-                        window.scrollTo(0, 0);
+                        resetarFormulario();
                     }, 3000);
                 })
                 .catch((error) => {
@@ -698,14 +690,14 @@ Segue comprovante em anexo 👇`;
                     const mensagem = `🎉 *PEDIDO COMITIVA GIRA MUNDO 2026*
 
 📋 *Dados do Pedido:*
-• Produto: ${selectedProduct.name}
-• Tamanho: ${selectedSize}
-• Valor: ${selectedProduct.price}
+• Produto: ${pedidoPendente.produto}
+• Tamanho: ${pedidoPendente.tamanho}
+• Valor: ${pedidoPendente.valor}
 
 👤 *Dados do Cliente:*
-• Nome: ${formData.nome}
-• Telefone: ${formData.telefone}
-• Endereço: ${formData.localizacao}
+• Nome: ${pedidoPendente.cliente}
+• Telefone: ${pedidoPendente.telefone}
+• Endereço: ${pedidoPendente.localizacao}
 
 ✅ *Pagamento realizado via PIX*
 
@@ -714,13 +706,11 @@ Segue comprovante em anexo 👇`;
                     const whatsappUrl = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(mensagem)}`;
                     window.open(whatsappUrl, '_blank');
                     
-                    mostrarNotificacao('Envie o comprovante no WhatsApp para confirmarmos seu pedido!', 'alerta');
+                    mostrarNotificacao('⚠️ Houve um problema com o email, mas abrimos o WhatsApp! Envie o comprovante lá.', 'alerta');
                     
-                    // Mostrar feedback após 3 segundos
+                    // Resetar formulário após 3 segundos
                     setTimeout(() => {
-                        document.getElementById('paymentView').style.display = 'none';
-                        document.getElementById('feedbackSection').classList.remove('hidden');
-                        window.scrollTo(0, 0);
+                        resetarFormulario();
                     }, 3000);
                 })
                 .finally(() => {
@@ -732,12 +722,12 @@ Segue comprovante em anexo 👇`;
         function resetarFormulario() {
             document.getElementById('paymentView').style.display = 'none';
             document.getElementById('productsView').style.display = 'block';
-            document.getElementById('feedbackSection').classList.add('hidden');
             document.getElementById('nome').value = '';
             document.getElementById('telefone').value = '';
             document.getElementById('localizacao').value = '';
             selectedProduct = null;
             selectedSize = null;
+            pedidoPendente = null;
             formData = { nome: '', telefone: '', localizacao: '' };
             
             document.querySelectorAll('.size-option').forEach(el => {
@@ -748,66 +738,8 @@ Segue comprovante em anexo 👇`;
         }
 
         // ============================================
-        // FUNÇÕES DE FEEDBACK
-        // ============================================
-        function enviarFeedback(estrelas) {
-            feedbackEstrelas = estrelas;
-            const botoes = document.querySelectorAll('#feedbackSection button');
-            botoes.forEach((btn, index) => {
-                if (index < estrelas) {
-                    btn.classList.add('scale-125');
-                } else {
-                    btn.classList.remove('scale-125');
-                }
-            });
-        }
-
-        function salvarFeedback() {
-            if (!feedbackEstrelas) {
-                mostrarNotificacao('Por favor, selecione uma avaliação!', 'alerta');
-                return;
-            }
-
-            const feedback = {
-                estrelas: feedbackEstrelas,
-                comentario: document.getElementById('comentarioFeedback').value,
-                produto: selectedProduct ? selectedProduct.name : 'Desconhecido',
-                data: new Date().toISOString()
-            };
-            
-            const feedbacks = JSON.parse(localStorage.getItem('feedbacksComitiva') || '[]');
-            feedbacks.push(feedback);
-            localStorage.setItem('feedbacksComitiva', JSON.stringify(feedbacks));
-            
-            mostrarNotificacao('Obrigado pelo seu feedback!', 'sucesso');
-            
-            setTimeout(() => {
-                resetarFormulario();
-            }, 2000);
-        }
-
-        // ============================================
         // FUNÇÕES DE INICIALIZAÇÃO
         // ============================================
-        function setupLazyLoading() {
-            var lazyloadImages = document.querySelectorAll("img.lazy");
-            
-            var imageObserver = new IntersectionObserver(function(entries, observer) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        var image = entry.target;
-                        image.src = image.dataset.src;
-                        image.classList.remove("lazy");
-                        imageObserver.unobserve(image);
-                    }
-                });
-            });
-            
-            lazyloadImages.forEach(function(image) {
-                imageObserver.observe(image);
-            });
-        }
-
         function setupAutoSave() {
             ['nome', 'telefone', 'localizacao'].forEach(id => {
                 const input = document.getElementById(id);
@@ -835,17 +767,7 @@ Segue comprovante em anexo 👇`;
         // INICIALIZAÇÃO
         // ============================================
         document.addEventListener('DOMContentLoaded', function() {
-            setupLazyLoading();
             setupAutoSave();
-            
-            // Capturar UTM
-            const urlParams = new URLSearchParams(window.location.search);
-            const utmData = {
-                source: urlParams.get('utm_source') || 'direct',
-                medium: urlParams.get('utm_medium') || 'none',
-                campaign: urlParams.get('utm_campaign') || 'carnaval2026'
-            };
-            localStorage.setItem('utmData', JSON.stringify(utmData));
         });
 
         // ============================================
