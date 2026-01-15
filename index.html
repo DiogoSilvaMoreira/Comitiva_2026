@@ -301,17 +301,27 @@
                 <!-- QR Code PIX -->
                 <div class="bg-white p-6 rounded-2xl mb-6 border-2 border-green-200">
                     <div class="flex justify-center mb-4">
-                        <div id="qrCodeContainer" class="bg-white p-4 rounded-xl border-2 border-green-300"></div>
+                        <div id="qrCodeContainer" class="bg-white p-4 rounded-xl border-2 border-green-300">
+                            <!-- QR Code será inserido aqui dinamicamente -->
+                        </div>
                     </div>
                     
                     <div class="mb-4">
-                        <p class="text-sm text-gray-600 mb-2 font-semibold text-center">Chave PIX (CPF):</p>
+                        <p class="text-sm text-gray-600 mb-2 font-semibold text-center">Chave PIX para Copiar:</p>
                         <div class="bg-gray-50 p-4 rounded-lg border border-gray-300">
-                            <p id="pixKey" class="text-center text-lg font-mono font-bold text-gray-700">14872500610</p>
+                            <p id="pixKey" class="text-center text-sm font-mono text-gray-700 break-all"></p>
                         </div>
-                        <button onclick="copiarChavePix()" class="mt-3 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold">
-                            📋 Copiar Chave PIX
+                        <button onclick="copiarChavePix()" class="mt-3 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
+                            <span>📋</span> Copiar Chave PIX
                         </button>
+                    </div>
+                    
+                    <!-- Instruções do QR Code -->
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-sm text-gray-700 text-center">
+                            <span class="font-semibold">📱 Escaneie o QR Code acima</span><br>
+                            ou copie a chave PIX para pagar o valor correto no seu banco
+                        </p>
                     </div>
                 </div>
 
@@ -323,7 +333,7 @@
                     <ol class="text-sm text-left text-gray-600 space-y-2 ml-4">
                         <li>1️⃣ Abra o app do seu banco</li>
                         <li>2️⃣ Escolha pagar com PIX</li>
-                        <li>3️⃣ Escaneie o QR Code OU copie a chave CPF</li>
+                        <li>3️⃣ Escaneie o QR Code OU copie a chave PIX abaixo</li>
                         <li>4️⃣ Confirme o valor de <strong id="pixInstrucaoValor"></strong></li>
                         <li>5️⃣ Finalize o pagamento</li>
                         <li>6️⃣ Clique no botão abaixo para enviar comprovante</li>
@@ -377,8 +387,9 @@
         const CONFIG = {
             chavePix: '14872500610',
             whatsapp: '5535999550588',
-            pixUrlCamiseta: 'https://nubank.com.br/cobrar/mr90k/69691846-0b66-4fbf-8f1a-88aa94662425',
-            pixUrlCombo: 'https://nubank.com.br/cobrar/mr90k/696916e1-602d-42f4-9239-623c288002e8'
+            // Chaves PIX completas
+            pixKey45: '00020126330014BR.GOV.BCB.PIX011114872500610520400005303986540545.005802BR5925Vitor Emanuel Faria de Ca6009SAO PAULO62140510woESGnN9O563044145',
+            pixKey70: '00020126330014BR.GOV.BCB.PIX011114872500610520400005303986540570.005802BR5925Vitor Emanuel Faria de Ca6009SAO PAULO62140510mw0BgJqvxB6304D736'
         };
         
         // ============================================
@@ -427,6 +438,7 @@
         let selectedSize = null;
         let formData = { nome: '', telefone: '', localizacao: '' };
         let pedidoPendente = null;
+        let currentPixKey = '';
 
         // ============================================
         // FUNÇÕES DE NOTIFICAÇÃO
@@ -611,15 +623,24 @@
             document.getElementById('resumoValor').textContent = selectedProduct.price;
             document.getElementById('pixInstrucaoValor').textContent = selectedProduct.price;
             
-            let pixUrl = '';
+            // Exibir o QR code correto baseado no produto
+            let qrCodeImage = '';
             if (selectedProduct.id === 1) {
-                pixUrl = CONFIG.pixUrlCamiseta;
+                qrCodeImage = 'qrcode45.jpeg'; // QR Code para camiseta (R$ 45,00)
+                currentPixKey = CONFIG.pixKey45;
             } else {
-                pixUrl = CONFIG.pixUrlCombo;
+                qrCodeImage = 'qrcode70.jpeg'; // QR Code para combo (R$ 70,00)
+                currentPixKey = CONFIG.pixKey70;
             }
             
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixUrl)}`;
-            document.getElementById('qrCodeContainer').innerHTML = `<img src="${qrCodeUrl}" alt="QR Code PIX" class="w-64 h-64">`;
+            // Inserir a imagem do QR Code
+            document.getElementById('qrCodeContainer').innerHTML = `
+                <img src="${qrCodeImage}" alt="QR Code PIX ${selectedProduct.price}" class="w-64 h-64 object-contain">
+                <p class="text-center text-sm text-gray-600 mt-2">Valor: ${selectedProduct.price}</p>
+            `;
+            
+            // Exibir a chave PIX correspondente
+            document.getElementById('pixKey').textContent = currentPixKey;
             
             window.scrollTo(0, 0);
         }
@@ -631,11 +652,10 @@
         }
 
         function copiarChavePix() {
-            const chave = CONFIG.chavePix;
-            navigator.clipboard.writeText(chave).then(() => {
+            navigator.clipboard.writeText(currentPixKey).then(() => {
                 mostrarNotificacao('Chave PIX copiada! Cole no app do seu banco.', 'sucesso');
             }).catch(() => {
-                mostrarNotificacao('Chave PIX: ' + chave, 'alerta');
+                mostrarNotificacao('Chave PIX: ' + currentPixKey.substring(0, 50) + '...', 'alerta');
             });
         }
 
@@ -728,6 +748,7 @@ Segue comprovante em anexo 👇`;
             selectedProduct = null;
             selectedSize = null;
             pedidoPendente = null;
+            currentPixKey = '';
             formData = { nome: '', telefone: '', localizacao: '' };
             
             document.querySelectorAll('.size-option').forEach(el => {
@@ -768,6 +789,14 @@ Segue comprovante em anexo 👇`;
         // ============================================
         document.addEventListener('DOMContentLoaded', function() {
             setupAutoSave();
+            
+            // Configurar formatação automática do telefone
+            const telefoneInput = document.getElementById('telefone');
+            if(telefoneInput) {
+                telefoneInput.addEventListener('input', function(e) {
+                    formatarTelefone(e.target);
+                });
+            }
         });
 
         // ============================================
