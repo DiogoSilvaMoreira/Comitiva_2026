@@ -278,14 +278,14 @@
             </div>
         </div>
 
-        <!-- Pagamento -->
+        <!-- Pagamento PIX -->
         <div id="paymentView" style="display: none;">
             <div class="card-gradient rounded-3xl shadow-2xl p-6 md:p-8">
                 <div class="text-center mb-6">
                     <h2 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                        💳 Finalizar Pagamento
+                        💰 Pagamento via PIX
                     </h2>
-                    <p class="text-gray-600">Escolha a forma de pagamento</p>
+                    <p class="text-gray-600">Escaneie o QR Code ou copie a chave PIX</p>
                 </div>
                 
                 <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border-2 border-purple-200">
@@ -302,21 +302,52 @@
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <button onclick="processarPagamento('Cartão de Crédito/Débito')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-xl font-bold text-lg">
-                        <span class="text-3xl">💳</span>
-                        <span>PAGAR COM CARTÃO</span>
-                    </button>
+                <!-- QR Code PIX -->
+                <div class="bg-white p-6 rounded-2xl mb-6 border-2 border-green-200">
+                    <div class="flex justify-center mb-4">
+                        <div id="qrCodeContainer" class="bg-white p-4 rounded-xl border-2 border-green-300"></div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 mb-2 font-semibold text-center">Chave PIX (CPF):</p>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-300">
+                            <p id="pixKey" class="text-center text-lg font-mono font-bold text-gray-700">149.363.316-35</p>
+                        </div>
+                        <button onclick="copiarChavePix()" class="mt-3 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold">
+                            📋 Copiar Chave PIX
+                        </button>
+                    </div>
+                </div>
 
+                <!-- Instruções -->
+                <div class="bg-blue-50 p-4 rounded-xl mb-6 border border-blue-200">
+                    <p class="text-sm text-gray-700 mb-2 font-semibold">
+                        📱 Como pagar:
+                    </p>
+                    <ol class="text-sm text-left text-gray-600 space-y-2 ml-4">
+                        <li>1️⃣ Abra o app do seu banco</li>
+                        <li>2️⃣ Escolha pagar com PIX</li>
+                        <li>3️⃣ Escaneie o QR Code OU copie a chave CPF</li>
+                        <li>4️⃣ Confirme o valor de <strong id="pixInstrucaoValor"></strong></li>
+                        <li>5️⃣ Finalize o pagamento</li>
+                        <li>6️⃣ Clique no botão abaixo para enviar comprovante</li>
+                    </ol>
+                </div>
+
+                <div class="space-y-4">
                     <button onclick="processarPagamento('PIX')" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-xl font-bold text-lg">
-                        <span class="text-3xl">📱</span>
-                        <span>PAGAR COM PIX</span>
+                        <span class="text-3xl">✅</span>
+                        <span>JÁ PAGUEI - ENVIAR COMPROVANTE</span>
                     </button>
 
                     <button onclick="backToForm()" class="w-full bg-gray-500 hover:bg-gray-600 text-white py-4 rounded-2xl font-semibold text-lg transition-all">
                         ← Voltar
                     </button>
                 </div>
+
+                <p class="text-center text-xs text-gray-500 mt-4">
+                    ⚠️ Após o pagamento, clique no botão acima para enviar o comprovante via WhatsApp
+                </p>
             </div>
         </div>
     </div>
@@ -333,20 +364,21 @@
         // ============================================
         // CONFIGURAÇÃO DO EMAILJS
         // ============================================
-        // IMPORTANTE: Substitua com suas credenciais do EmailJS
-        
-        // 1. Acesse: https://www.emailjs.com/
-        // 2. Crie uma conta gratuita
-        // 3. Substitua os valores abaixo:
-        
         const EMAILJS_CONFIG = {
-            publicKey: 'D73FCGMQjjf3NElQq',  // Ex: 'user_xxxxxxxxxxx'
-            serviceId: 'service_5188ei9',   // Ex: 'service_xxxxxxx'
-            templateId: 'template_uychlml'  // Ex: 'template_xxxxxxx'
+            publicKey: 'D73FCGMQjjf3NElQq',
+            serviceId: 'service_5188ei9',
+            templateId: 'template_uychlml'
         };
         
-        // Inicializar EmailJS
         emailjs.init(EMAILJS_CONFIG.publicKey);
+        
+        // ============================================
+        // CONFIGURAÇÃO WHATSAPP E PIX
+        // ============================================
+        const CONFIG = {
+            chavePix: '14936331635',
+            whatsapp: '5535999675196'
+        };
         
         // ============================================
         // FUNÇÃO PARA ENVIAR EMAIL
@@ -423,19 +455,15 @@
 
         function selectSize(size) {
             selectedSize = size;
-            
-            // Remove seleção anterior
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
-            
-            // Adiciona seleção ao tamanho clicado
             event.currentTarget.classList.add('selected');
         }
 
         function selectProduct(id) {
             selectedProduct = products.find(p => p.id === id);
-            selectedSize = null; // Reseta o tamanho
+            selectedSize = null;
             
             document.getElementById('productsView').style.display = 'none';
             document.getElementById('formView').style.display = 'block';
@@ -446,7 +474,6 @@
             document.getElementById('selectedName').textContent = selectedProduct.name;
             document.getElementById('selectedPrice').textContent = selectedProduct.price;
             
-            // Remove seleção de tamanhos
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
@@ -485,6 +512,11 @@
             document.getElementById('resumoCliente').textContent = formData.nome;
             document.getElementById('resumoTelefone').textContent = formData.telefone;
             document.getElementById('resumoValor').textContent = selectedProduct.price;
+            document.getElementById('pixInstrucaoValor').textContent = selectedProduct.price;
+            
+            // Gerar QR Code
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(CONFIG.chavePix)}`;
+            document.getElementById('qrCodeContainer').innerHTML = `<img src="${qrCodeUrl}" alt="QR Code PIX" class="w-64 h-64">`;
             
             window.scrollTo(0, 0);
         }
@@ -495,8 +527,16 @@
             window.scrollTo(0, 0);
         }
 
+        function copiarChavePix() {
+            const chave = CONFIG.chavePix;
+            navigator.clipboard.writeText(chave).then(() => {
+                alert('✅ Chave PIX copiada!\n\nCole no app do seu banco para fazer o pagamento.');
+            }).catch(() => {
+                alert('Chave PIX: ' + chave);
+            });
+        }
+
         function processarPagamento(metodo) {
-            // Preparar dados do pedido
             const dadosPedido = {
                 produto: selectedProduct.name,
                 tamanho: selectedSize,
@@ -507,36 +547,71 @@
                 formaPagamento: metodo
             };
             
-            // Mostrar mensagem de processamento
             const btnPagamento = event.currentTarget;
             const textoOriginal = btnPagamento.innerHTML;
             btnPagamento.disabled = true;
-            btnPagamento.innerHTML = '<span class="text-2xl">⏳</span> Processando...';
+            btnPagamento.innerHTML = '<span class="text-2xl">⏳</span> Enviando...';
             
             // Enviar email
             enviarEmail(dadosPedido)
                 .then(() => {
-                    // Email enviado com sucesso
-                    alert(`✅ PEDIDO CONFIRMADO COM SUCESSO!\n\n💳 Forma de pagamento: ${metodo}\n\n👤 Cliente: ${formData.nome}\n📱 Telefone: ${formData.telefone}\n📍 Endereço: ${formData.localizacao}\n\n🎽 Produto: ${selectedProduct.name}\n👕 Tamanho: ${selectedSize}\n💰 Valor: ${selectedProduct.price}\n\n📧 Você receberá um email de confirmação em breve!\n\n🎉 Obrigado pela compra!\n🎊 Nos vemos no Carnaval 2026!`);
+                    // Abrir WhatsApp com mensagem
+                    const mensagem = `🎉 *PEDIDO COMITIVA GIRA MUNDO 2026*
+
+📋 *Dados do Pedido:*
+• Produto: ${selectedProduct.name}
+• Tamanho: ${selectedSize}
+• Valor: ${selectedProduct.price}
+
+👤 *Dados do Cliente:*
+• Nome: ${formData.nome}
+• Telefone: ${formData.telefone}
+• Endereço: ${formData.localizacao}
+
+✅ *Pagamento realizado via PIX*
+
+Segue comprovante em anexo 👇`;
+
+                    const whatsappUrl = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(mensagem)}`;
+                    window.open(whatsappUrl, '_blank');
                     
-                    // Resetar formulário
+                    alert(`✅ PEDIDO REGISTRADO COM SUCESSO!\n\n📧 Você receberá um email de confirmação!\n\n💬 Envie o comprovante de pagamento no WhatsApp que acabou de abrir.\n\n🎉 Obrigado pela compra!\n🎊 Nos vemos no Carnaval 2026!`);
+                    
                     resetarFormulario();
                 })
                 .catch((error) => {
-                    // Erro ao enviar email
                     console.error('Erro ao enviar email:', error);
-                    alert(`⚠️ Pedido registrado, mas houve um problema ao enviar o email de confirmação.\n\nPor favor, entre em contato pelo WhatsApp para confirmar seu pedido.\n\n📋 Dados do seu pedido:\n👤 ${formData.nome}\n📱 ${formData.telefone}\n🎽 ${selectedProduct.name}\n👕 Tamanho: ${selectedSize}\n💰 ${selectedProduct.price}`);
                     
-                    // Resetar formulário mesmo com erro
+                    // Mesmo com erro no email, abre WhatsApp
+                    const mensagem = `🎉 *PEDIDO COMITIVA GIRA MUNDO 2026*
+
+📋 *Dados do Pedido:*
+• Produto: ${selectedProduct.name}
+• Tamanho: ${selectedSize}
+• Valor: ${selectedProduct.price}
+
+👤 *Dados do Cliente:*
+• Nome: ${formData.nome}
+• Telefone: ${formData.telefone}
+• Endereço: ${formData.localizacao}
+
+✅ *Pagamento realizado via PIX*
+
+Segue comprovante em anexo 👇`;
+
+                    const whatsappUrl = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(mensagem)}`;
+                    window.open(whatsappUrl, '_blank');
+                    
+                    alert(`⚠️ Houve um problema ao enviar o email, mas não se preocupe!\n\n💬 Envie o comprovante no WhatsApp que acabou de abrir e confirmaremos seu pedido.\n\n🎉 Obrigado pela compra!`);
+                    
                     resetarFormulario();
                 })
                 .finally(() => {
-                    // Restaurar botão
                     btnPagamento.disabled = false;
                     btnPagamento.innerHTML = textoOriginal;
                 });
         }
-        
+
         function resetarFormulario() {
             document.getElementById('paymentView').style.display = 'none';
             document.getElementById('productsView').style.display = 'block';
@@ -547,7 +622,6 @@
             selectedSize = null;
             formData = { nome: '', telefone: '', localizacao: '' };
             
-            // Remove seleção de tamanhos
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
