@@ -106,6 +106,20 @@
             border-width: 3px;
             box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
         }
+
+        .type-option {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .type-option:hover {
+            transform: scale(1.05);
+        }
+
+        .type-option.selected {
+            border-width: 3px;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen">
@@ -214,9 +228,9 @@
                     <!-- Seleção de Tamanho -->
                     <div>
                         <label class="flex items-center gap-2 text-gray-800 font-bold mb-3 text-lg">
-                            👕 Tamanho da Camiseta
+                            👕 Passo 1: Escolha o Tamanho
                         </label>
-                        <div class="grid grid-cols-6 gap-2">
+                        <div class="grid grid-cols-5 gap-3">
                             <div onclick="selectSize('P')" class="size-option border-2 border-purple-300 rounded-xl py-4 text-center bg-white hover:bg-purple-50" data-size="P">
                                 <p class="text-2xl font-bold text-purple-600">P</p>
                                 <p class="text-xs text-gray-500 mt-1">Pequeno</p>
@@ -237,12 +251,28 @@
                                 <p class="text-2xl font-bold text-purple-600">XG</p>
                                 <p class="text-xs text-gray-500 mt-1">XXG</p>
                             </div>
-                            <div onclick="selectSize('BABY')" class="size-option border-2 border-purple-300 rounded-xl py-4 text-center bg-white hover:bg-purple-50" data-size="BABY">
-                                <p class="text-xl font-bold text-pink-600"></p>
-                                <p class="text-sm text-pink-600 font-bold mt-1">BABY LOOK</p>
-                            </div>
                         </div>
                         <p class="text-sm text-gray-500 mt-2 text-center">Selecione o tamanho desejado</p>
+                    </div>
+
+                    <!-- Seleção de Tipo (Normal ou Baby Look) -->
+                    <div id="tipoContainer" style="display: none;">
+                        <label class="flex items-center gap-2 text-gray-800 font-bold mb-3 text-lg">
+                            👕 Passo 2: Escolha o Tipo
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div onclick="selectType('NORMAL')" class="type-option border-2 border-blue-300 rounded-xl py-6 text-center bg-white hover:bg-blue-50" data-type="NORMAL">
+                                <p class="text-2xl font-bold text-blue-600"></p>
+                                <p class="text-lg font-bold text-blue-600 mt-2">Normal</p>
+                                <p class="text-xs text-gray-500 mt-1">Corte tradicional</p>
+                            </div>
+                            <div onclick="selectType('BABY')" class="type-option border-2 border-pink-300 rounded-xl py-6 text-center bg-white hover:bg-pink-50" data-type="BABY">
+                                <p class="text-2xl font-bold text-pink-600"></p>
+                                <p class="text-lg font-bold text-pink-600 mt-2">Baby Look</p>
+                                <p class="text-xs text-gray-500 mt-1">Corte mais justo</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2 text-center">Selecione o tipo da camiseta</p>
                     </div>
 
                     <div>
@@ -267,7 +297,7 @@
                     </div>
 
                     <div class="flex flex-col gap-3 pt-4">
-                        <button onclick="finalizarCompra()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-5 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 shadow-xl transform hover:scale-105 transition-all duration-300">
+                        <button onclick="finalizarCompra()" id="btnFinalizarCompra" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-5 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 shadow-xl transform hover:scale-105 transition-all duration-300">
                             <span class="text-2xl">🛒</span> FINALIZAR COMPRA
                         </button>
                         <button onclick="backToProducts()" class="w-full bg-gray-500 hover:bg-gray-600 text-white py-4 rounded-2xl font-semibold text-lg transition-all">
@@ -402,7 +432,7 @@
         function enviarEmail(dadosPedido) {
             const templateParams = {
                 produto: dadosPedido.produto,
-                tamanho: dadosPedido.tamanho,
+                tamanho: dadosPedido.tamanhoCompleto, // Agora com tipo
                 cliente: dadosPedido.cliente,
                 telefone: dadosPedido.telefone,
                 localizacao: dadosPedido.localizacao,
@@ -440,6 +470,7 @@
 
         let selectedProduct = null;
         let selectedSize = null;
+        let selectedType = null;
         let formData = { nome: '', telefone: '', localizacao: '' };
         let pedidoPendente = null;
         let currentPixKey = '';
@@ -547,15 +578,43 @@
 
         function selectSize(size) {
             selectedSize = size;
+            selectedType = null; // Reseta o tipo quando muda o tamanho
+            
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
             event.currentTarget.classList.add('selected');
+            
+            // Mostra a seleção de tipo
+            document.getElementById('tipoContainer').style.display = 'block';
+            
+            // Reseta a seleção de tipo
+            document.querySelectorAll('.type-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Desabilita o botão até escolher o tipo
+            document.getElementById('btnFinalizarCompra').disabled = true;
+            document.getElementById('btnFinalizarCompra').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function selectType(type) {
+            selectedType = type;
+            
+            document.querySelectorAll('.type-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Habilita o botão após escolher o tipo
+            document.getElementById('btnFinalizarCompra').disabled = false;
+            document.getElementById('btnFinalizarCompra').classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
         function selectProduct(id) {
             selectedProduct = products.find(p => p.id === id);
             selectedSize = null;
+            selectedType = null;
             
             document.getElementById('productsView').style.display = 'none';
             document.getElementById('formView').style.display = 'block';
@@ -566,9 +625,20 @@
             document.getElementById('selectedName').textContent = selectedProduct.name;
             document.getElementById('selectedPrice').textContent = selectedProduct.price;
             
+            // Reseta seleções
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
+            document.querySelectorAll('.type-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Esconde a seleção de tipo inicialmente
+            document.getElementById('tipoContainer').style.display = 'none';
+            
+            // Desabilita botão
+            document.getElementById('btnFinalizarCompra').disabled = true;
+            document.getElementById('btnFinalizarCompra').classList.add('opacity-50', 'cursor-not-allowed');
             
             window.scrollTo(0, 0);
         }
@@ -578,6 +648,7 @@
             document.getElementById('productsView').style.display = 'block';
             selectedProduct = null;
             selectedSize = null;
+            selectedType = null;
             window.scrollTo(0, 0);
         }
 
@@ -588,6 +659,11 @@
 
             if (!selectedSize) {
                 mostrarNotificacao('Por favor, selecione o tamanho da camiseta!', 'alerta');
+                return;
+            }
+
+            if (!selectedType) {
+                mostrarNotificacao('Por favor, selecione o tipo (Normal ou Baby Look)!', 'alerta');
                 return;
             }
 
@@ -606,10 +682,16 @@
                 return;
             }
 
-            // Salvar pedido pendente (sem enviar email ainda)
+            // Criar descrição completa do tamanho
+            const tipoTexto = selectedType === 'BABY' ? 'Baby Look' : 'Normal';
+            const tamanhoCompleto = `${selectedSize} - ${tipoTexto}`;
+
+            // Salvar pedido pendente
             pedidoPendente = {
                 produto: selectedProduct.name,
                 tamanho: selectedSize,
+                tipo: selectedType,
+                tamanhoCompleto: tamanhoCompleto,
                 cliente: formData.nome,
                 telefone: formData.telefone,
                 localizacao: formData.localizacao,
@@ -621,7 +703,7 @@
             document.getElementById('paymentView').style.display = 'block';
             
             document.getElementById('resumoProduto').textContent = selectedProduct.name;
-            document.getElementById('resumoTamanho').textContent = selectedSize;
+            document.getElementById('resumoTamanho').textContent = tamanhoCompleto;
             document.getElementById('resumoCliente').textContent = formData.nome;
             document.getElementById('resumoTelefone').textContent = formData.telefone;
             document.getElementById('resumoValor').textContent = selectedProduct.price;
@@ -674,7 +756,7 @@
             btnPagamento.disabled = true;
             btnPagamento.innerHTML = '<span class="text-2xl">⏳</span> Enviando email...';
             
-            // AGORA SIM envia o email (após usuário confirmar que fez o PIX)
+            // Envia o email
             enviarEmail(pedidoPendente)
                 .then(() => {
                     // Salvar no localStorage como confirmado
@@ -685,7 +767,7 @@
 
 📋 *Dados do Pedido:*
 • Produto: ${pedidoPendente.produto}
-• Tamanho: ${pedidoPendente.tamanho}
+• Tamanho: ${pedidoPendente.tamanhoCompleto}
 • Valor: ${pedidoPendente.valor}
 
 👤 *Dados do Cliente:*
@@ -715,7 +797,7 @@ Segue comprovante em anexo 👇`;
 
 📋 *Dados do Pedido:*
 • Produto: ${pedidoPendente.produto}
-• Tamanho: ${pedidoPendente.tamanho}
+• Tamanho: ${pedidoPendente.tamanhoCompleto}
 • Valor: ${pedidoPendente.valor}
 
 👤 *Dados do Cliente:*
@@ -751,6 +833,7 @@ Segue comprovante em anexo 👇`;
             document.getElementById('localizacao').value = '';
             selectedProduct = null;
             selectedSize = null;
+            selectedType = null;
             pedidoPendente = null;
             currentPixKey = '';
             formData = { nome: '', telefone: '', localizacao: '' };
@@ -758,6 +841,11 @@ Segue comprovante em anexo 👇`;
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
+            document.querySelectorAll('.type-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            document.getElementById('tipoContainer').style.display = 'none';
             
             window.scrollTo(0, 0);
         }
