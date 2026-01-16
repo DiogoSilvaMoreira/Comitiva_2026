@@ -578,24 +578,36 @@
 
         function selectSize(size) {
             selectedSize = size;
-            selectedType = null; // Reseta o tipo quando muda o tamanho
+            
+            // Se for XG, não mostra opção de Baby Look
+            if (size === 'XG') {
+                selectedType = 'NORMAL'; // Define automaticamente como Normal
+                document.getElementById('tipoContainer').style.display = 'none';
+                
+                // Habilita o botão imediatamente para XG
+                document.getElementById('btnFinalizarCompra').disabled = false;
+                document.getElementById('btnFinalizarCompra').classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                // Para outros tamanhos, mostra a seleção de tipo
+                selectedType = null; // Reseta o tipo quando muda o tamanho
+                document.getElementById('tipoContainer').style.display = 'block';
+                
+                // Desabilita o botão até escolher o tipo (só para outros tamanhos)
+                document.getElementById('btnFinalizarCompra').disabled = true;
+                document.getElementById('btnFinalizarCompra').classList.add('opacity-50', 'cursor-not-allowed');
+            }
             
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('selected');
             });
             event.currentTarget.classList.add('selected');
             
-            // Mostra a seleção de tipo
-            document.getElementById('tipoContainer').style.display = 'block';
-            
-            // Reseta a seleção de tipo
-            document.querySelectorAll('.type-option').forEach(el => {
-                el.classList.remove('selected');
-            });
-            
-            // Desabilita o botão até escolher o tipo
-            document.getElementById('btnFinalizarCompra').disabled = true;
-            document.getElementById('btnFinalizarCompra').classList.add('opacity-50', 'cursor-not-allowed');
+            // Reseta a seleção de tipo (só se não for XG)
+            if (size !== 'XG') {
+                document.querySelectorAll('.type-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+            }
         }
 
         function selectType(type) {
@@ -606,9 +618,11 @@
             });
             event.currentTarget.classList.add('selected');
             
-            // Habilita o botão após escolher o tipo
-            document.getElementById('btnFinalizarCompra').disabled = false;
-            document.getElementById('btnFinalizarCompra').classList.remove('opacity-50', 'cursor-not-allowed');
+            // Habilita o botão após escolher o tipo (só se não for XG)
+            if (selectedSize !== 'XG') {
+                document.getElementById('btnFinalizarCompra').disabled = false;
+                document.getElementById('btnFinalizarCompra').classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
 
         function selectProduct(id) {
@@ -662,7 +676,8 @@
                 return;
             }
 
-            if (!selectedType) {
+            // Para XG, não precisa escolher tipo (já é automático)
+            if (selectedSize !== 'XG' && !selectedType) {
                 mostrarNotificacao('Por favor, selecione o tipo (Normal ou Baby Look)!', 'alerta');
                 return;
             }
@@ -683,14 +698,14 @@
             }
 
             // Criar descrição completa do tamanho
-            const tipoTexto = selectedType === 'BABY' ? 'Baby Look' : 'Normal';
-            const tamanhoCompleto = `${selectedSize} - ${tipoTexto}`;
+            const tipoTexto = selectedSize === 'XG' ? 'Normal' : (selectedType === 'BABY' ? 'Baby Look' : 'Normal');
+            const tamanhoCompleto = selectedSize === 'XG' ? selectedSize : `${selectedSize} - ${tipoTexto}`;
 
             // Salvar pedido pendente
             pedidoPendente = {
                 produto: selectedProduct.name,
                 tamanho: selectedSize,
-                tipo: selectedType,
+                tipo: selectedSize === 'XG' ? 'NORMAL' : selectedType,
                 tamanhoCompleto: tamanhoCompleto,
                 cliente: formData.nome,
                 telefone: formData.telefone,
